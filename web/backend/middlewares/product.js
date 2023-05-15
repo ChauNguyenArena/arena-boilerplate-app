@@ -51,31 +51,87 @@ const getProductVendors = async ({ shop, accessToken }) => {
   return res.shop['productVendors'].edges.map((item) => item.node)
 }
 
-const getAll = async ({ shop, accessToken, count }) => {
-  let items = []
-  let res = null
-  let hasNextPage = true
-  let nextPageInfo = ''
+// const getAll = async ({ shop, accessToken, count }) => {
+//   let items = []
+//   let res = null
+//   let hasNextPage = true
+//   let nextPageInfo = ''
+
+//   while (hasNextPage) {
+//     res = await apiCaller({
+//       shop,
+//       accessToken,
+//       endpoint: `products.json?limit=250&page_info=${nextPageInfo}`,
+//       pageInfo: true,
+//     })
+
+//     items = items.concat(res.products)
+
+//     hasNextPage = res.pageInfo.hasNext
+//     nextPageInfo = res.pageInfo.nextPageInfo
+
+//     if (!isNaN(count) && parseInt(count) && items.length >= parseInt(count)) {
+//       hasNextPage = false
+//       nextPageInfo = ''
+
+//       items = items.slice(0, count)
+//     }
+//   }
+
+//   return items
+// }
+
+const getAll = async ({ shop, accessToken }) => {
+  let query = `
+  query {
+    products(first: 1) {
+      edges {
+        node {
+          id
+          title
+          handle
+          status
+        }
+        cursor
+      }
+      pageInfo {
+        hasNextPage
+      }
+    }
+  }
+`
+  let res = await graphqlCaller({ shop, accessToken, query })
+  let hasNextPage = res.products.pageInfo.hasNextPage
+  let nextPageInfo = res.products.edges[0].cursor
+  let items = res.products.edges.map((item) => item.node)
 
   while (hasNextPage) {
+    query = `query {
+      products(first: 250, after: ${nextPageInfo}) {
+        edges {
+          node {
+            id
+            title
+            handle
+            status
+          }
+          cursor
+        }
+        pageInfo {
+          hasNextPage
+        }
+      }
+    }`
     res = await apiCaller({
       shop,
       accessToken,
-      endpoint: `products.json?limit=250&page_info=${nextPageInfo}`,
-      pageInfo: true,
+      query,
     })
 
-    items = items.concat(res.products)
-
-    hasNextPage = res.pageInfo.hasNext
-    nextPageInfo = res.pageInfo.nextPageInfo
-
-    if (!isNaN(count) && parseInt(count) && items.length >= parseInt(count)) {
-      hasNextPage = false
-      nextPageInfo = ''
-
-      items = items.slice(0, count)
-    }
+    items = items.concat(res.products.edges.map((item) => item.node))
+    let len = items.length(items)
+    hasNextPage = res.products.pageInfo.hasNextPage
+    nextPageInfo = res.products.edges[len - 1].cursor
   }
 
   return items
@@ -106,6 +162,12 @@ const find = async ({ shop, accessToken, limit, pageInfo, order, filter }) => {
     pageInfo: true,
   })
 }
+
+// const findGraphQL = async ({ shop, accessToken, query }) => {
+//   let query = ``
+
+//   let res = await graphqlCaller(shop, accessToken, query)
+// }
 
 const findById = async ({ shop, accessToken, id }) => {
   return await apiCaller({ shop, accessToken, endpoint: `products/${id}.json` })
