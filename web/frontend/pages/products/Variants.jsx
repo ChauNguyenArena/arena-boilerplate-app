@@ -68,7 +68,7 @@ function Variants(props) {
             headings={['Variant', 'Price', 'Compare At Price', '']}
             columnContentTypes={['text', 'text', 'text', 'text']}
             rows={formData.options.variants.map((item, index) => [
-              <div style={{ whiteSpace: 'nowrap' }}>{getVariantTitle(item)}</div>,
+              <div style={{ whiteSpace: 'nowrap' }}>{item.title || getVariantTitle(item)}</div>,
               <TextField
                 prefix="$"
                 value={item.price || ''}

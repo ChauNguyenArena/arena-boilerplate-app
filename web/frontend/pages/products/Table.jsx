@@ -28,7 +28,7 @@ function Table(props) {
       <div style={{ maxWidth: 300, whiteSpace: 'normal' }}>
         <Stack spacing="tight" wrap={false}>
           <Stack.Item>
-            <Thumbnail source={item.image?.src || ImagesMajor} size="small" alt={item.title} />
+            <Thumbnail source={item.images[0]?.src || ImagesMajor} size="small" alt={item.title} />
           </Stack.Item>
           <Stack.Item>
             <h3>
@@ -38,7 +38,7 @@ function Table(props) {
           </Stack.Item>
         </Stack>
       </div>,
-      <Badge status={item.status === 'active' ? 'success' : ''}>{item.status}</Badge>,
+      <Badge status={item.status.toLowerCase() === 'active' ? 'success' : ''}>{item.status}</Badge>,
       <div style={{ maxWidth: 300, whiteSpace: 'normal' }}>
         <Stack vertical spacing="extraTight">
           <Stack.Item>Vendor: {item.vendor}</Stack.Item>

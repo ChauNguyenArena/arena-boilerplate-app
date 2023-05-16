@@ -113,7 +113,7 @@ function CreateForm(props) {
         ..._formData.options,
         enabled: true,
         value: created.options.map((item) => ({ name: item.name, values: item.values })),
-        variants: created.variants,
+        variants: created.variants.edges.map((item) => item.node),
       }
       if (_formData.options.value.length < 3) {
         _formData.options.value = _formData.options.value.concat(
@@ -123,7 +123,7 @@ function CreateForm(props) {
           }))
         )
       }
-      _formData.images.originalValue = created.images
+      _formData.images.originalValue = created.images.edges.map((item) => item.node)
     } else {
       /**
        * Sample data
@@ -208,8 +208,8 @@ function CreateForm(props) {
         }
       }
       _formData['images'].removeValue = []
-      _res = await ProductApi.findById(res.data.product.id)
-      _formData['images'].originalValue = _res.data.product.images
+      // _res = await ProductApi.findById(res.data.product.id)
+      // _formData['images'].originalValue = _res.data.product.images
 
       setFormData(_formData)
 

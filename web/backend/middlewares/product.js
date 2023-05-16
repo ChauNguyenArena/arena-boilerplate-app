@@ -141,36 +141,173 @@ const count = async ({ shop, accessToken }) => {
   return await apiCaller({ shop, accessToken, endpoint: `products/count.json` })
 }
 
-const find = async ({ shop, accessToken, limit, pageInfo, order, filter }) => {
-  let _limit = limit ? parseInt(limit) : 20
+// const find = async ({ shop, accessToken, limit, pageInfo, order, filter }) => {
+//   let _limit = limit ? parseInt(limit) : 20
 
-  let endpoint = `products.json?limit=${_limit}${filter || ''}`
+//   let endpoint = `products.json?limit=${_limit}${filter || ''}`
+//   if (pageInfo) {
+//     endpoint += `&page_info=${pageInfo}`
+//   } else {
+//     if (order) {
+//       endpoint += `&order=${order}`
+//     } else {
+//       endpoint += `&order=updated_at+desc`
+//     }
+//   }
+
+//   return await apiCaller({
+//     shop,
+//     accessToken,
+//     endpoint,
+//     pageInfo: true,
+//   })
+// }
+
+const find = async ({
+  shop,
+  accessToken,
+  limit = 20,
+  pageInfo = '',
+  order = false,
+  title = '',
+  hasPreviousPage = false,
+  hasNextPage = false,
+}) => {
+  let variables = {
+    limit,
+    order,
+    title: `title: ${title}`,
+    pageInfo,
+  }
+  let page = ``
   if (pageInfo) {
-    endpoint += `&page_info=${pageInfo}`
+    page = hasNextPage
+      ? `first: $limit, after: $pageInfo`
+      : hasPreviousPage
+      ? `last: $limit, before: $pageInfo`
+      : `first: $limit`
   } else {
-    if (order) {
-      endpoint += `&order=${order}`
-    } else {
-      endpoint += `&order=updated_at+desc`
-    }
+    page = `first: $limit`
   }
 
-  return await apiCaller({
+  let query = `query products ($limit: Int!, $order: Boolean, $title: String ${
+    pageInfo !== '' ? ', $pageInfo: String' : ''
+  }) {
+    products(${page}, reverse: $order, query: $title) {
+      edges {
+        node {
+          id 
+          title
+          handle
+          status
+          description
+          vendor
+          productType
+          options {
+            id
+            name
+            position
+            values
+          }
+          variants(first: 10) {
+            edges {
+              node{
+                id
+                title
+                price
+                compareAtPrice
+                selectedOptions {
+                  name
+                  value
+                }
+              }
+            }
+          } 
+          images(first: 10) {
+            edges {
+              node {
+                id
+                src
+              }
+            }
+          }
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+        hasPreviousPage
+        startCursor
+      }
+    }
+
+  }`
+
+  // console.log('query', query)
+  // console.log('variables', variables)
+  let res = await graphqlCaller({
     shop,
     accessToken,
-    endpoint,
-    pageInfo: true,
+    query,
+    variables,
   })
+  // let items = res.products.edges.map((item) => item.node)
+  console.log('res', res)
+  return res
 }
 
-// const findGraphQL = async ({ shop, accessToken, query }) => {
-//   let query = ``
-
-//   let res = await graphqlCaller(shop, accessToken, query)
+// const findById = async ({ shop, accessToken, id }) => {
+//   return await apiCaller({ shop, accessToken, endpoint: `products/${id}.json` })
 // }
 
 const findById = async ({ shop, accessToken, id }) => {
-  return await apiCaller({ shop, accessToken, endpoint: `products/${id}.json` })
+  let query = `query {product(id: "gid://shopify/Product/${id}"){
+    
+        id 
+        title
+        handle
+        status
+        description
+        vendor
+        productType
+        options {
+          id
+          name
+          position
+          values
+        }
+        variants(first: 10) {
+          edges {
+            node{
+              id
+              title
+              price
+              compareAtPrice
+              selectedOptions {
+                name
+                value
+              }
+            }
+          }
+        } 
+        images(first: 10) {
+          edges {
+            node {
+              id
+              src
+            }
+          }
+        }
+      }
+    }`
+
+  let res = await graphqlCaller({
+    shop,
+    accessToken,
+    query,
+  })
+  console.log('res', res)
+  return res
 }
 
 const create = async ({ shop, accessToken, data }) => {

@@ -36,7 +36,24 @@ function ProductsPage(props) {
 
       let res = await ProductApi.find(query)
       if (!res.success) throw res.error
+      const { edges, pageInfo } = res.data.products
+      console.log('res', res)
+      let _products = edges.map((value) => {
+        const images = value.node.images.edges.map((value) => value.node)
+        const variants = value.node.variants.edges.map((value) => value.node)
+        const id = value.node.id.substring(value.node.id.lastIndexOf('/') + 1, value.node.id.length)
+        const product = {
+          ...value.node,
+          id,
+          images,
+          variants,
+        }
+        return product
+      })
 
+      let _pageInfo = pageInfo
+
+      res.data = { products: _products, pageInfo: _pageInfo }
       setProducts(res.data)
     } catch (error) {
       console.log(error)
