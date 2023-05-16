@@ -9,6 +9,7 @@ import ImageApi from '../../apis/image'
 import Variants from './Variants'
 import { filterValidOptions, generateBase64Image } from './actions'
 import Images from './Images'
+import axios from 'axios'
 
 CreateForm.propTypes = {
   // ...appProps,
@@ -106,9 +107,15 @@ function CreateForm(props) {
     let _formData = JSON.parse(JSON.stringify(InitFormData))
 
     if (created.id) {
-      Array.from(['title', 'body_html', 'status', 'vendor', 'product_type']).map(
+      Array.from(['title', 'body_html', 'status', 'vendor']).map(
         (key) => (_formData[key] = { ..._formData[key], value: created[key] || '' })
       )
+
+      _formData['product_type'] = {
+        ..._formData['product_type'],
+        value: created['productType'] || '',
+      }
+
       _formData.options = {
         ..._formData.options,
         enabled: true,
@@ -165,6 +172,7 @@ function CreateForm(props) {
         body_html: validFormData.body_html.value,
         vendor: validFormData.vendor.value,
         product_type: validFormData.product_type.value,
+        status: validFormData.status.value,
       }
 
       let options = filterValidOptions(formData.options.value)
@@ -179,7 +187,11 @@ function CreateForm(props) {
       if (created.id) {
         // update
         // data.images = formData.images.originalValue.filter((item) => item.id)
-        res = await ProductApi.update(created.id, { product: data })
+        console.log('data:>>', data)
+        res = await ProductApi.update(
+          created.id.substring(created.id.lastIndexOf('/') + 1, created.id.length),
+          { product: data }
+        )
       } else {
         // create
         res = await ProductApi.create({ product: data })
@@ -192,10 +204,35 @@ function CreateForm(props) {
       if (_images.length > 0) {
         for (let _item of _images) {
           if (_item.name) {
-            const param = await generateBase64Image(_item)
-            let _param = param.split(',')
+            // const param = await generateBase64Image(_item)
+            // let _param = param.split(',')
 
-            _res = await ImageApi.create(res.data.product.id, { image: { attachment: _param[1] } })
+            // _res = await ImageApi.create(res.data.product.id, { image: { attachment: _param[1] } })
+            let data = {
+              filename: _item.name,
+              mimeType: _item.type,
+              fileSize: _item.size.toString(),
+              resource: 'IMAGE',
+              httpMethod: 'POST',
+            }
+            _res = await ImageApi.createUrlImage(data)
+
+            console.log('_res', _res)
+            // const [{ url, parameters }] = _res.data.stagedUploadsCreate.stagedTargets
+            // console.log('url', url)
+            // const _formImage = new FormData()
+
+            // parameters.forEach(({ name, value }) => {
+            //   _formImage.append(name, value)
+            // })
+
+            // _formImage.append('file', _item)
+
+            // const resImage = await axios.post(url, _formImage).then(function (response) {
+            //   return response
+            // })
+            // console.log('resImage:>>', resImage)
+            return
           } else {
             _res = await ImageApi.create(res.data.product.id, { image: _item })
           }
@@ -214,8 +251,8 @@ function CreateForm(props) {
       setFormData(_formData)
 
       actions.showNotify({ message: created.id ? 'Saved' : 'Created' })
-
-      onSubmited(res.data.product)
+      // console.log('res.data.product>>', res)
+      onSubmited(res.data.productCreate.product)
     } catch (error) {
       console.log(error)
       actions.showNotify({ error: true, message: error.message })

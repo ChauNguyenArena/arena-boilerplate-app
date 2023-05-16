@@ -42,7 +42,7 @@ function Table(props) {
       <div style={{ maxWidth: 300, whiteSpace: 'normal' }}>
         <Stack vertical spacing="extraTight">
           <Stack.Item>Vendor: {item.vendor}</Stack.Item>
-          <Stack.Item>Product type: {item.product_type}</Stack.Item>
+          <Stack.Item>Product type: {item.productType}</Stack.Item>
         </Stack>
       </div>,
       <Stack distribution="trailing">

@@ -163,37 +163,29 @@ const count = async ({ shop, accessToken }) => {
 //   })
 // }
 
-const find = async ({
-  shop,
-  accessToken,
-  limit = 20,
-  pageInfo = '',
-  order = false,
-  title = '',
-  hasPreviousPage = false,
-  hasNextPage = false,
-}) => {
-  let variables = {
-    limit,
-    order,
-    title: `title: ${title}`,
-    pageInfo,
-  }
-  let page = ``
-  if (pageInfo) {
-    page = hasNextPage
-      ? `first: $limit, after: $pageInfo`
-      : hasPreviousPage
-      ? `last: $limit, before: $pageInfo`
-      : `first: $limit`
+const find = async ({ shop, accessToken, limit, order, filter, nextPage, previousPage }) => {
+  let _limit = limit ? parseInt(limit) : 20
+
+  let variables = ``
+
+  if (nextPage) {
+    variables += `first: ${_limit}, after: "${nextPage}"`
+  } else if (previousPage) {
+    variables += `last: ${_limit}, before: "${previousPage}"`
   } else {
-    page = `first: $limit`
+    variables += `first: ${_limit}`
   }
 
-  let query = `query products ($limit: Int!, $order: Boolean, $title: String ${
-    pageInfo !== '' ? ', $pageInfo: String' : ''
-  }) {
-    products(${page}, reverse: $order, query: $title) {
+  if (order) {
+    variables += `reverse: ${false}`
+  } else variables += `reverse: ${true}`
+
+  if (filter) {
+    variables += `, query: "${filter}"`
+  }
+
+  let query = `query {
+    products(${variables}) {
       edges {
         node {
           id 
@@ -249,10 +241,9 @@ const find = async ({
     shop,
     accessToken,
     query,
-    variables,
   })
   // let items = res.products.edges.map((item) => item.node)
-  console.log('res', res)
+  // console.log('items', items)
   return res
 }
 
@@ -262,7 +253,6 @@ const find = async ({
 
 const findById = async ({ shop, accessToken, id }) => {
   let query = `query {product(id: "gid://shopify/Product/${id}"){
-    
         id 
         title
         handle
@@ -306,32 +296,187 @@ const findById = async ({ shop, accessToken, id }) => {
     accessToken,
     query,
   })
-  console.log('res', res)
+
   return res
 }
 
+// const create = async ({ shop, accessToken, data }) => {
+//   return await apiCaller({ shop, accessToken, endpoint: `products.json`, method: 'POST', data })
+// }
+
 const create = async ({ shop, accessToken, data }) => {
-  return await apiCaller({ shop, accessToken, endpoint: `products.json`, method: 'POST', data })
+  let _data = {}
+  _data['title'] = data.product['title']
+  _data['descriptionHtml'] = data.product['body_html']
+  _data['vendor'] = data.product['vendor']
+  _data['status'] = data.product['status'].toUpperCase()
+  _data['productType'] = data.product['product_type']
+  if (data.product['options']) {
+    _data['options'] = data.product['options'].map((item) => item.name)
+  }
+
+  if (data.product['variants']) {
+    _data['variants'] = data.product['variants'].map((item) => {
+      return {
+        options: [item.option1, item.option2, item.option3],
+        price: parseInt(item.price) || 0,
+        compareAtPrice: parseInt(item.compare_at_price) || 0,
+      }
+    })
+  }
+
+  let variables = { input: _data }
+  // console.log('_data', variables)
+
+  let query = `mutation productCreate($input: ProductInput!) {
+    productCreate(input: $input) {
+      product {
+        id 
+          title
+          handle
+          status
+          description
+          vendor
+          productType
+          options {
+            id
+            name
+            position
+            values
+          }
+          variants(first: 10) {
+            edges {
+              node{
+                id
+                title
+                price
+                compareAtPrice
+                selectedOptions {
+                  name
+                  value
+                }
+              }
+            }
+          } 
+          images(first: 10) {
+            edges {
+              node {
+                id
+                src
+              }
+            }
+          }
+      }
+      userErrors {
+        message
+        field
+      }
+    }
+  }`
+
+  let res = await graphqlCaller({ shop, accessToken, query, variables })
+
+  return res
 }
 
 const update = async ({ shop, accessToken, id, data }) => {
-  return await apiCaller({
-    shop,
-    accessToken,
-    endpoint: `products/${id}.json`,
-    method: 'PUT',
-    data,
+  let _data = {}
+  _data['id'] = `gid://shopify/Product/${id}`
+  _data['title'] = data.product['title']
+  _data['descriptionHtml'] = data.product['body_html']
+  _data['vendor'] = data.product['vendor']
+  _data['status'] = data.product['status'].toUpperCase()
+  _data['productType'] = data.product['product_type']
+  _data['options'] = data.product['options'].map((item) => item.name)
+  _data['variants'] = data.product['variants'].map((item) => {
+    return {
+      options: item.option1
+        ? [item.option1, item.option2, item.option3]
+        : item.selectedOptions.map((_item) => _item.value),
+      price: parseInt(item.price) || 0,
+      compareAtPrice: parseInt(item.compare_at_price) || 0,
+    }
   })
+  let variables = { input: _data }
+  // console.log('_data', variables)
+
+  let query = `mutation productUpdate($input: ProductInput!) {
+    productUpdate(input: $input) {
+      product {
+        id 
+          title
+          handle
+          status
+          description
+          vendor
+          productType
+          options {
+            id
+            name
+            position
+            values
+          }
+          variants(first: 10) {
+            edges {
+              node{
+                id
+                title
+                price
+                compareAtPrice
+                selectedOptions {
+                  name
+                  value
+                }
+              }
+            }
+          } 
+          images(first: 10) {
+            edges {
+              node {
+                id
+                src
+              }
+            }
+          }
+      }
+      userErrors {
+        message
+        field
+      }
+    }
+  }`
+
+  let res = await graphqlCaller({ shop, accessToken, query, variables })
+  return res
 }
 
+// const update = async ({ shop, accessToken, id, data }) => {
+//   return await apiCaller({
+//     shop,
+//     accessToken,
+//     endpoint: `products/${id}.json`,
+//     method: 'PUT',
+//     data,
+//   })
+// }
+
 const _delete = async ({ shop, accessToken, id }) => {
-  return await apiCaller({
-    shop,
-    accessToken,
-    endpoint: `products/${id}.json`,
-    method: 'DELETE',
-  })
+  let query = `mutation {
+    productDelete(input: {id: "gid://shopify/Product/${id}"}) {
+      deletedProductId
+    }
+  }`
+  return await graphqlCaller({ shop, accessToken, query })
 }
+
+// const _delete = async ({ shop, accessToken, id }) => {
+//   return await apiCaller({
+//     shop,
+//     accessToken,
+//     endpoint: `products/${id}.json`,
+//     method: 'DELETE',
+//   })
+// }
 
 const Product = {
   getProductTypes,

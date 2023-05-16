@@ -37,7 +37,7 @@ function ProductsPage(props) {
       let res = await ProductApi.find(query)
       if (!res.success) throw res.error
       const { edges, pageInfo } = res.data.products
-      console.log('res', res)
+
       let _products = edges.map((value) => {
         const images = value.node.images.edges.map((value) => value.node)
         const variants = value.node.variants.edges.map((value) => value.node)
@@ -114,10 +114,10 @@ function ProductsPage(props) {
       {products?.products?.length > 0 && (
         <Stack distribution="center">
           <Pagination
-            hasPrevious={products.pageInfo.hasPrevious}
-            onPrevious={() => setSearchParams({ pageInfo: products.pageInfo.previousPageInfo })}
-            hasNext={products.pageInfo.hasNext}
-            onNext={() => setSearchParams({ pageInfo: products.pageInfo.nextPageInfo })}
+            hasPrevious={products.pageInfo.hasPreviousPage}
+            onPrevious={() => setSearchParams({ previousPage: products.pageInfo.startCursor })}
+            hasNext={products.pageInfo.hasNextPage}
+            onNext={() => setSearchParams({ nextPage: products.pageInfo.endCursor })}
           />
         </Stack>
       )}

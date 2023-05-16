@@ -21,9 +21,20 @@ export default {
     try {
       const { shop, accessToken } = getCurrentSession(req, res)
       const { idProduct } = req.params
-      console.log('data:>>', req.body)
 
       const data = await Image.create({ shop, accessToken, data: req.body, idProduct })
+
+      return ResponseHandler.success(res, data)
+    } catch (error) {
+      return ResponseHandler.error(res, error)
+    }
+  },
+
+  createUrlImage: async (req, res) => {
+    try {
+      const { shop, accessToken } = getCurrentSession(req, res)
+
+      const data = await Image.createUrlImage({ shop, accessToken, data: req.body })
 
       return ResponseHandler.success(res, data)
     } catch (error) {

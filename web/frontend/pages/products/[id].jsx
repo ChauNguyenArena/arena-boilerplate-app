@@ -17,7 +17,6 @@ function DetailPage(props) {
     try {
       let res = await ProductApi.findById(id)
       if (!res.success) throw res.error
-      console.log('res>>', res)
 
       setProduct(res.data.product)
     } catch (error) {

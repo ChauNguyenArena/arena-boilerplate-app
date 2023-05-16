@@ -12,7 +12,11 @@ function NewPage(props) {
         {...props}
         created={{}}
         onDiscard={() => props.navigate(`products`)}
-        onSubmited={(data) => props.navigate(`products/${data.id}`)}
+        onSubmited={(data) =>
+          props.navigate(
+            `products/${data.id.substring(data.id.lastIndexOf('/') + 1, data.id.length)}`
+          )
+        }
       />
     </Stack>
   )
