@@ -42,6 +42,20 @@ export default {
     }
   },
 
+  // delete: async (req, res) => {
+  //   try {
+  //     const { shop, accessToken } = getCurrentSession(req, res)
+
+  //     const { idProduct, id } = req.params
+
+  //     const data = await Image.delete({ shop, accessToken, idProduct, id })
+
+  //     return ResponseHandler.success(res, data)
+  //   } catch (error) {
+  //     return ResponseHandler.error(res, error)
+  //   }
+  // },
+
   delete: async (req, res) => {
     try {
       const { shop, accessToken } = getCurrentSession(req, res)
