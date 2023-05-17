@@ -14,8 +14,12 @@ export default function App(props) {
       pathname: '/',
     },
     {
-      label: 'Products',
+      label: 'Products REST',
       pathname: '/products',
+    },
+    {
+      label: 'Products GraphQL',
+      pathname: '/products-graphql',
     },
   ]
   let secondaryMoreActions = {
