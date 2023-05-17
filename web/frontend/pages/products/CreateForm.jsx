@@ -198,16 +198,22 @@ function CreateForm(props) {
       }
 
       if (!res.success) throw res.error
+      let _id = res.data.productCreate
+        ? res.data.productCreate.product.id
+        : res.data.productUpdate.product.id
       let _images = formData.images.originalValue.filter((item) => !item.id)
       let _res = null
 
       if (_images.length > 0) {
         for (let _item of _images) {
           if (_item.name) {
+            // REST API
             // const param = await generateBase64Image(_item)
             // let _param = param.split(',')
 
             // _res = await ImageApi.create(res.data.product.id, { image: { attachment: _param[1] } })
+
+            //GraphQL
             let data = {
               filename: _item.name,
               mimeType: _item.type,
@@ -217,36 +223,60 @@ function CreateForm(props) {
             }
             _res = await ImageApi.createUrlImage(data)
 
-            console.log('_res', _res)
-            // const [{ url, parameters }] = _res.data.stagedUploadsCreate.stagedTargets
-            // console.log('url', url)
-            // const _formImage = new FormData()
+            const [{ url, parameters, resourceUrl }] = _res.data.stagedUploadsCreate.stagedTargets
 
-            // parameters.forEach(({ name, value }) => {
-            //   _formImage.append(name, value)
-            // })
+            const _formImage = new FormData()
 
-            // _formImage.append('file', _item)
+            parameters.forEach(({ name, value }) => {
+              _formImage.append(name, value)
+            })
 
-            // const resImage = await axios.post(url, _formImage).then(function (response) {
-            //   return response
-            // })
-            // console.log('resImage:>>', resImage)
-            return
+            _formImage.append('file', _item)
+
+            const resImage = await axios.post(url, _formImage)
+
+            if (resImage.status === 201) {
+              _res = await ImageApi.create(_id.substring(_id.lastIndexOf('/') + 1, _id.length), {
+                src: resourceUrl,
+                altText: _item.name,
+              })
+            }
           } else {
-            _res = await ImageApi.create(res.data.product.id, { image: _item })
+            // REST API
+            // _res = await ImageApi.create(res.data.product.id, { image: _item })
+
+            //GraphQL
+            _res = await ImageApi.create(_id.substring(_id.lastIndexOf('/') + 1, _id.length), {
+              ..._item,
+              altText: _item.src.substring(_item.src.lastIndexOf('/') + 1, _item.src.length),
+            })
           }
         }
       }
       let _removeImages = formData['images'].removeValue.filter((item) => item.id)
+
+      //REST API
+      // if (_removeImages.length > 0) {
+      //   for (let _item of _removeImages) {
+      //     _res = await ImageApi.delete(_id, _item.id)
+      //   }
+      // }
+
+      // GraphQL
       if (_removeImages.length > 0) {
         for (let _item of _removeImages) {
-          _res = await ImageApi.delete(res.data.product.id, _item.id)
+          _res = await ImageApi.delete(
+            _id.substring(_id.lastIndexOf('/') + 1, _id.length),
+            _item.id.substring(_item.id.lastIndexOf('/') + 1, _item.id.length)
+          )
         }
       }
+      // return
       _formData['images'].removeValue = []
+      //REST API
       // _res = await ProductApi.findById(res.data.product.id)
-      // _formData['images'].originalValue = _res.data.product.images
+      _res = await ProductApi.findById(_id.substring(_id.lastIndexOf('/') + 1, _id.length))
+      _formData['images'].originalValue = _res.data.product.images.edges.map((item) => item.node)
 
       setFormData(_formData)
 
