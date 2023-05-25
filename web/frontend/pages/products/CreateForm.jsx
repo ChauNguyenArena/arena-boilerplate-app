@@ -184,19 +184,23 @@ function CreateForm(props) {
 
       if (!res.success) throw res.error
       let _images = formData.images.originalValue.filter((item) => !item.id)
-
+      let _res = null
       if (_images.length > 0) {
-        _images.map(async (_item) => {
-          if (_item.name) {
-            const param = await generateBase64Image(_item)
-            let _param = param.split(',')
+        _res = await Promise.all(
+          await _images.map(async (_item) => {
+            if (_item.name) {
+              const param = await generateBase64Image(_item)
+              let _param = param.split(',')
 
-            await ImageApi.create(res.data.product.id, { image: { attachment: _param[1] } })
-          } else {
-            await ImageApi.create(res.data.product.id, { image: _item })
-          }
-        })
+              await ImageApi.create(res.data.product.id, { image: { attachment: _param[1] } })
+            } else {
+              await ImageApi.create(res.data.product.id, { image: _item })
+            }
+          })
+        )
       }
+      _res = await ProductApi.findById(res.data.product.id)
+      console.log('_res after:>>', _res)
       actions.showNotify({ message: created.id ? 'Saved' : 'Created' })
 
       onSubmited(res.data.product)
